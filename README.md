@@ -91,10 +91,6 @@ Le fichier `output.m3u8` référence tous les segments et peut être lu par n'im
 ```bash
 ffplay output/output.m3u8
 ```
-
-### Dans un navigateur
-Hébergez les fichiers sur un serveur web et utilisez un lecteur JavaScript comme hls.js ou Video.js.
-
 ## Nettoyage
 
 ```bash
