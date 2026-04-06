@@ -20,9 +20,10 @@ fi
 # 1. Compilation du segmenteur
 echo "Compilation du video_segmenter..."
 if [ -f "video_segmenter.c" ]; then
-    gcc -Wall -Wextra -O2 $(pkg-config --libs libavformat libavcodec libavutil) \
-        -o video_segmenter video_segmenter.c \
-        $(pkg-config --cflags libavformat libavcodec libavutil)
+    #gcc -Wall -Wextra -O2 $(pkg-config --libs libavformat libavcodec libavutil) \
+    #    -o video_segmenter video_segmenter.c \
+    #    $(pkg-config --cflags libavformat libavcodec libavutil)
+    gcc main.o video_segmenter.o stream_utils.o segment_writer.o index_writer.o -o video_segmenter -lavformat -lavcodec -lavutil -lm -L/opt/homebrew/opt/ffmpeg/lib
     echo "Compilation réussie"
 else
     echo "Fichier video_segmenter.c introuvable"
@@ -35,13 +36,13 @@ echo "Installation des binaires..."
 #install -m 755 video_processor.sh /usr/local/bin/
 #echo "Binaires installés dans /usr/local/bin/"
 
-install -m 755 video_segmenter $HOME/Works/video_orchestrator/src/main/resources/usr/local/bin/
-install -m 755 video_processor.sh $HOME/Works/video_orchestrator/src/main/resources/usr/local/bin/
-echo "Binaires installés dans $HOME/Works/video_orchestrator/src/main/resources/usr/local/bin/"
+#install -m 755 video_segmenter $HOME/Works/video_orchestrator/src/main/resources/usr/local/bin/
+#install -m 755 video_processor.sh $HOME/Works/video_orchestrator/src/main/resources/usr/local/bin/
+#echo "Binaires installés dans $HOME/Works/video_orchestrator/src/main/resources/usr/local/bin/"
 
-#install -m 755 video_segmenter ./usr/local/bin/
-#install -m 755 video_processor.sh ./usr/local/bin/
-#echo "Binaires installés dans ./usr/local/bin/"
+install -m 755 video_segmenter ./usr/local/bin/
+install -m 755 video_processor.sh ./usr/local/bin/
+echo "Binaires installés dans ./usr/local/bin/"
 
 # 3. Création des dossiers
 echo "Création des dossiers..."
@@ -50,14 +51,14 @@ echo "Création des dossiers..."
 #mkdir -p /var/log
 #touch /var/log/video_processor.log
 
-#mkdir -p ./tmp/videos/{processing,done,error}
-#mkdir -p ./var/www/html/streams
-#mkdir -p ./var/log
-#touch ./var/log/video_processor.log
-mkdir -p $HOME/Works/video_orchestrator/src/main/resources/tmp/videos/{processing,done,error}
-mkdir -p $HOME/Works/video_orchestrator/src/main/resources/var/www/html/streams
-mkdir -p $HOME/Works/video_orchestrator/src/main/resources/var/log
-touch $HOME/Works/video_orchestrator/src/main/resources/var/log/video_processor.log
+mkdir -p ./tmp/videos/{processing,done,error}
+mkdir -p ./var/www/html/streams
+mkdir -p ./var/log
+touch ./var/log/video_processor.log
+#mkdir -p $HOME/Works/video_orchestrator/src/main/resources/tmp/videos/{processing,done,error}
+#mkdir -p $HOME/Works/video_orchestrator/src/main/resources/var/www/html/streams
+#mkdir -p $HOME/Works/video_orchestrator/src/main/resources/var/log
+#touch $HOME/Works/video_orchestrator/src/main/resources/var/log/video_processor.log
 
 echo "Dossiers créés"
 # /video_orchestrator/src/main/resources
@@ -77,13 +78,13 @@ fi
 echo "Configuration du cron..."
 #CRON_LINE="*/5 * * * * /usr/local/bin/video_processor.sh >> /var/log/video_processor_cron.log 2>&1"
 #CLEANUP_LINE="0 3 * * 0 /usr/local/bin/video_processor.sh cleanup 7"
-#CRON_LINE="*/5 * * * * ./usr/local/bin/video_processor.sh >> ./var/log/video_processor_cron.log 2>&1"
+CRON_LINE="*/5 * * * * ./usr/local/bin/video_processor.sh >> ./var/log/video_processor_cron.log 2>&1"
 # Nettoyage hebdomadaire des anciens fichiers (dimanche à 3h)
-#CLEANUP_LINE="0 3 * * 0 ./usr/local/bin/video_processor.sh cleanup 7"
+CLEANUP_LINE="0 3 * * 0 ./usr/local/bin/video_processor.sh cleanup 7"
 
-CRON_LINE="*/5 * * * * $HOME/Works/video_orchestrator/src/main/resources/usr/local/bin/video_processor.sh >> $HOME/Works/video_orchestrator/src/main/resources/var/log/video_processor_cron.log 2>&1"
+#CRON_LINE="*/5 * * * * $HOME/Works/video_orchestrator/src/main/resources/usr/local/bin/video_processor.sh >> $HOME/Works/video_orchestrator/src/main/resources/var/log/video_processor_cron.log 2>&1"
 # Nettoyage hebdomadaire des anciens fichiers (dimanche à 3h)
-CLEANUP_LINE="0 3 * * 0 $HOME/Works/video_orchestrator/src/main/resources/usr/local/bin/video_processor.sh cleanup 7"
+#CLEANUP_LINE="0 3 * * 0 $HOME/Works/video_orchestrator/src/main/resources/usr/local/bin/video_processor.sh cleanup 7"
 
 # Ajoute au cron si pas déjà présent
 (crontab -l 2>/dev/null | grep -v video_processor.sh; echo "$CRON_LINE"; echo "$CLEANUP_LINE") | crontab -
@@ -93,16 +94,16 @@ echo "Tâches cron configurées (vérification toutes les 5 min)"
 # 6. Test de l'installation
 echo ""
 echo "Test de l'installation..."
-#if /usr/local/bin/video_segmenter 2>&1 | grep -q "Usage"; then
 if ./usr/local/bin/video_segmenter 2>&1 | grep -q "Usage"; then
+#if $HOME/Works/video_orchestrator/src/main/resources/usr/local/bin/video_segmenter 2>&1 | grep -q "Usage"; then
     echo "video_segmenter fonctionne"
 else
     echo "video_segmenter ne fonctionne pas correctement"
 fi
 
 #if [ -x /usr/local/bin/video_processor.sh ]; then
-#if [ -x ./usr/local/bin/video_processor.sh ]; then
-if [ -x ../video_orchestrator/src/main/resources/usr/local/bin/video_processor.sh ]; then
+if [ -x ./usr/local/bin/video_processor.sh ]; then
+#if [ -x ../video_orchestrator/src/main/resources/usr/local/bin/video_processor.sh ]; then
     echo "video_processor.sh est exécutable"
 else
     echo "video_processor.sh n'est pas exécutable"
