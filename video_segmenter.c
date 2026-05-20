@@ -398,7 +398,9 @@ static int segment_video(
 
 int main(int argc, char **argv) {
     if (argc < 7) {
-       return 1;
+        fprintf(stderr, "Usage: %s <input> <output_dir> <index> <base_name> <ext> <duration> [max_segments]\n", argv[0]);
+        fprintf(stderr, "Exemple: %s video.mp4 ./output output.m3u8 segment .ts 10 0\n", argv[0]);
+        return 1;
     }
 
     const char *input_file = argv[1];
