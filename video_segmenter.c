@@ -68,5 +68,16 @@ static SegResult *write_idx_file(
         return SEG_ERR;
     }
 
+    fprintf(fp, "#EXTM3U\n"
+                "#EXT-X-VERSION:3\n"
+                "#EXT-X-MEDIA-SEQUENCE:%u\n"
+                "#EXT-X-TARGETDURATION:%u\n",
+            offset, max_duration);
+
+    for (unsigned int i = 0; i < num_segments; i++) {
+        // if (fp, duration[i], prefix, i + offset, ext < 0) fclose(fp);
+        return SEG_ERR;
+    }
+
     return SEG_OK;
 }
