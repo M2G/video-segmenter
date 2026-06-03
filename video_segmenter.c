@@ -76,7 +76,7 @@ static SegResult *write_idx_file(
 
     for (unsigned int i = 0; i < num_segments; i++) {
         // if (fp, duration[i], prefix, i + offset, ext < 0) fclose(fp);
-        if (fprintf(fp, ""#EXTINF:%u,\n%s-%u%s\n",
+        if (fprintf(fp, "#EXTINF:%u,\n%s-%u%s\n",
                     durations[i], prefix, i + offset, ext) < 0)
             fprintf(stderr, "Erreur : Échec écriture idx\n");
             fclose(fp);
