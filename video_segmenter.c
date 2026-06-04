@@ -126,5 +126,20 @@ int max_list_length) {
     AVPacket *pkt = NULL;
     SegResult ret = SEG_OK;
 
-    
+    char current_file_name[MAX_FILENAME_LENGTH];
+    char tmp_idx_file[MAX_FILENAME_LENGTH];
+    unsigned int durations[MAX_SEGMENTS + 1];
+    unsigned int max_duration = 0;
+    unsigned int num_segments = 0;
+    unsigned int out_idx = 1;
+    unsigned int list_offset = 1;
+
+    double segment_start = 0.0;
+    double pkt_time = 0.0;
+    double prev_pkt_time = 0.0;
+
+    int in_video_idx = -1;
+    int in_audio_idx = -1;
+    int out_video_idx = -1;
+    int out_audio_idx = -1;
 }
