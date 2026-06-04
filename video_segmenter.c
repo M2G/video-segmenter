@@ -59,7 +59,6 @@ static SegResult *write_idx_file(
     unsigned int       max_duration,
     int                islast
 ) {
-
     if (num_segments < 1) return SEG_OK;
 
     FILE *fp = fopen(tmp_index, "w");
@@ -112,4 +111,20 @@ static SegResult open_next_segment(
 
     printf("Segment : '%s'\n", filename_out);
     return SEG_OK;
+}
+
+static SegResult segment_video(
+const char *input_file,
+const char *base_dirpath,
+const char *output_idx_file,
+const char *base_file_name,
+const char *base_file_ext,
+int segment_length,
+int max_list_length) {
+    AVFormatContext *input_ctx = NULL;
+    AVFormatContext *out_ctx = NULL;
+    AVPacket *pkt = NULL;
+    SegResult ret = SEG_OK;
+
+    
 }
