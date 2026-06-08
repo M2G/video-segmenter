@@ -157,7 +157,11 @@ int max_list_length) {
     CHECK(avformat_find_stream_info(input_ctx, NULL) < 0, "Impossible de lire les infos. des flux");
 
     // détecte des flux vidéo/audio
-    for (unsigned int i = 0; i < input_ctx->nb_streams; i++) {}
+    for (unsigned int i = 0; i < input_ctx->nb_streams; i++) {
+        enum AVMediaType type = input_ctx->streams[i]->codec->codec_type;
+        if (type == AVMEDIA_TYPE_VIDEO && in_video_idx < 0) in_video_idx = i;
+        if (type == AVMEDIA_TYPE_AUDIO && in_audio_idx < 0) in_audio_idx = i;
+    }
     CHECK(in_video_idx < 0, "Aucun flux vidéo trouvé");
     printf("Flux vidéo : idx %d\n", in_video_idx);
 }
