@@ -171,5 +171,11 @@ int max_list_length) {
     AVStream *out_video_stream = add_out_stream(output_ctx, input_ctx->streams[in_video_idx]);
     CHECK(!out_video_stream, "Impossible d'allouer le stream");
     out_video_idx = out_video_stream->index;
-    
+
+    AVStream *out_audio_stream = NULL;
+    if (in_audio_index >= 0) {
+        AVStream *out_audio_stream = add_out_stream(output_ctx, input_ctx->streams[in_audio_idx]);
+        CHECK(!out_video_stream, "Impossible d'allouer le stream");
+        out_audio_idx = out_audio_stream->index;
+    }
 }
