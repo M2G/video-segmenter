@@ -164,4 +164,5 @@ int max_list_length) {
     }
     CHECK(in_video_idx < 0, "Aucun flux vidéo trouvé");
     printf("Flux vidéo : idx %d\n", in_video_idx);
+    if (in_audio_idx >= 0) printf("Flux audio : idx %d\n", in_audio_idx);
 }
