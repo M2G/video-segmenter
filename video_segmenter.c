@@ -192,6 +192,11 @@ int max_list_length) {
     pkt = av_packet_alloc();
     CHECK(!pkt, "Impossible d'allouer AVPacket");
 
-    while (av_read_frame(input_ctx, pkt, 0) >= 0) {}
+    while (av_read_frame(input_ctx, pkt, 0) >= 0) {
+        int is_keyframe = 0;
+        int orginal_stream_idx = pkt->stream_index;
+
+        if (pkt->stream_idx == orginal_stream_idx) {}
+    }
 
 }
