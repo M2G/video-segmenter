@@ -196,7 +196,11 @@ int max_list_length) {
         int is_keyframe = 0;
         int orginal_stream_idx = pkt->stream_index;
 
-        if (pkt->stream_idx == orginal_stream_idx) {}
+        if (pkt->stream_idx == orginal_stream_idx) {
+            pkt_time = pkt->pts * video_pts2time;
+            is_keyframe = pkt->flags & AV_PKT_FLAG_KEY;
+            // ...
+        }
     }
 
 }
