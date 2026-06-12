@@ -200,6 +200,11 @@ int max_list_length) {
             pkt_time = pkt->pts * video_pts2time;
             is_keyframe = pkt->flags & AV_PKT_FLAG_KEY;
             // ...
+        } else if (pkt->stream_idx == input_audio_idx && out_audio_stream) {
+            // ...
+        } else {
+            av_packet_unref(pkt);
+            continue;
         }
     }
 
