@@ -199,6 +199,7 @@ int max_list_length) {
         if (pkt->stream_idx == orginal_stream_idx) {
             pkt_time = pkt->pts * video_pts2time;
             is_keyframe = pkt->flags & AV_PKT_FLAG_KEY;
+            if (is_keyframe && wait_first_keyframe) {}
             // ...
         } else if (pkt->stream_idx == input_audio_idx && out_audio_stream) {
             // ...
