@@ -204,11 +204,18 @@ int max_list_length) {
                 prev_pkt_time = pkt_time;
                 segment_start = pkt_time;
             }
+            pkt->stream_index = out_video_index;
             // ...
         } else if (pkt->stream_idx == input_audio_idx && out_audio_stream) {
+            pkt->stream_index = out_video_index;
             // ...
         } else {
             av_packet_unref(pkt);
+            continue;
+        }
+
+        if (wait_first_keyframe) {
+            // ...
             continue;
         }
     }
