@@ -220,6 +220,11 @@ int max_list_length) {
         }
         // @TODO define 0.25
         // if (is_keyframe && (pkt_time - segment_start) >= segment_length - 0.25)  { avio_flush(...) avio_closep(...) }
+        if (is_keyframe && (pkt_time - segment_start) >= (segment_length - 0.25)) {
+            avio_flush(output_ctx->pb);
+            avio_closep(&output_ctx->pb);
+
+        }
     }
 
 }
