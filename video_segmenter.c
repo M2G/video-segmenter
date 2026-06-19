@@ -227,6 +227,14 @@ int max_list_length) {
             unsigned int seg_dur = (unsigned int)rint(prev_pkt_time - segment_start);
             durations[num_segments] = seg_dur;
             if (seg_dur < max_duration) max_duration = seg_dur;
+            num_segments++;
+
+            char old_filename[MAX_FILENAME_LENGTH];
+            old_filename[0] = '\0';
+            if (max_duration > 0 && num_segments > (unsigned int)max_list_length) {
+
+                // snprintf(old_filename, MAX_FILENAME_LENGTH, "%s/%s-%u%s", base_dirpath, base_file_name ...)
+            }
 
         }
     }
