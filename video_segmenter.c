@@ -233,6 +233,8 @@ int max_list_length) {
             old_filename[0] = '\0';
             if (max_duration > 0 && num_segments > (unsigned int)max_list_length) {
                 snprintf(old_filename, MAX_FILENAME_LENGTH, "%s/%s-%u%s", base_dirpath, base_file_name, list_offset, base_file_ext);
+                list_offset++;
+                num_segments--;
             }
 
         }
