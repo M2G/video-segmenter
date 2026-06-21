@@ -235,6 +235,12 @@ int max_list_length) {
                 snprintf(old_filename, MAX_FILENAME_LENGTH, "%s/%s-%u%s", base_dirpath, base_file_name, list_offset, base_file_ext);
                 list_offset++;
                 num_segments--;
+                memmove(durations, durations + 1, num_segments * sizeof(durations[0]));
+
+                // cacul (again) max dur only if seg deleted was max
+                if (durations[0] >= max_duration)
+                    max_duration = 0;
+
             }
 
         }
