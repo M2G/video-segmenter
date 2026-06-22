@@ -243,6 +243,13 @@ int max_list_length) {
                     for (unsigned int i = 0; i < num_segments; i++)
                         if (durations[i] > max_duration) max_duration = durations[i];
             }
+            // write_idx_file
+            write_idx_file(output_idx_file, tmp_idx_file, num_segments, durations, list_offset, base_file_name, base_file_ext, max_duration, 0);
+
+            if (num_segments >= MAX_SEGMENTS)
+                fprintf(stderr, "Too many segments (%u)\n", MAX_SEGMENTS);
+                av_packet_unref(pkt);
+                break;
         }
     }
 }
