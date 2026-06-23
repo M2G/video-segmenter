@@ -250,6 +250,12 @@ int max_list_length) {
                 fprintf(stderr, "Too many segments (%u)\n", MAX_SEGMENTS);
                 av_packet_unref(pkt);
                 break;
+
+            // open seg next and delete older (unlink diff)
+            if (open_next_segment(output_ctx, current_file_name, MAX_FILENAME_LENGTH, base_dirpath, base_file_name, output_idx + 1, base_file_ext) != SEG_OK) {
+                av_packet_unref(pkt);
+                break;
+            }
         }
     }
 }
