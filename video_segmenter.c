@@ -256,6 +256,14 @@ int max_list_length) {
                 av_packet_unref(pkt);
                 break;
             }
+            if (old_filename[0]) unlink(old_filename);
+            segment_start = pkt_time;
         }
+        if (pkt->stream_idx == out_video_stream) {
+            prev_pkt_time = pkt_time;
+        }
+        // Rescale timestamp : base tempo. input to output
+        AVStream *in_stream = input_ctx->streams[orginal_stream_idx];
+        AVStream *out_stream = output_ctx->streams[pkt->stream_index];
     }
 }
