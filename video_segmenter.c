@@ -276,4 +276,9 @@ int max_list_length) {
             break;
         }
     }
+
+    // last segm
+    if (num_segments > MAX_SEGMENTS) {
+
+    }
 }
