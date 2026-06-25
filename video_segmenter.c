@@ -265,5 +265,15 @@ int max_list_length) {
         // Rescale timestamp : base tempo. input to output
         AVStream *in_stream = input_ctx->streams[orginal_stream_idx];
         AVStream *out_stream = output_ctx->streams[pkt->stream_index];
+        pkt->pts = av_rescale_q_rnd(pkt->pts, in_stream->time_base, out_stream->time_base, AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX);
+        pkt->dts = av_rescale_q_rnd(pkt->dts, in_stream->time_base, out_stream->time_base, AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX);
+        pkt->duration = av_rescale_q(pkt->duration, in_stream->time_base, out_stream->time_base);
+        pkt->pos = -1;
+
+        if (av_interleaved_write_frame(output_ctx, pkt) < 0) {
+            fprintf(stderr, "Erreur : Impossible d'écrire le paquet\n");
+            av_packet_unref(pkt);
+            break;
+        }
     }
 }
