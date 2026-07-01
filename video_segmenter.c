@@ -334,4 +334,9 @@ int main (int argc, char *argv[]) {
     printf("Sortie : %s/%s-*%s\n", output_dir, base_name, ext);
     // add log + init segment_video
     // return result;
+    SegResult result = segment_video(input_file, output_dir, index_file,
+                                     base_name, extension,
+                                     segment_duration, max_segments);
+    printf("\n%s\n", result == SEG_OK ? "OK" : "FAIL");
+    return result;
 }
