@@ -184,7 +184,7 @@ int max_list_length) {
         != SEG_OK, "Impossible d'ouvrir le premier segment");
 
     if (avformat_write_header(output_ctx, NULL) < 0) {
-        avio_close(&output_ctx->pb);
+        avio_closep(&output_ctx->pb);
         CHECK(1, "Impossible d'écrire l'en-tête MPEG-TS");
     }
     const double video_pts2time = av_q2d(input_ctx->streams[input_video_idx]->time_base);
