@@ -33,13 +33,13 @@ do {                                                          \
 static AVStream *add_out_stream(AVFormatContext *output_ctx, AVStream *in_stream) {
      AVStream *out_stream = avformat_new_stream(output_ctx, NULL);
 
-    if (!outout_stream) {
+    if (!out_stream) {
         fprintf(stderr, "Erreur: Impossible d'allouer le flux de sortie\n");
         return NULL;
     }
 
     // copy param codec
-    if (avcodec_parameters_copy(out->codecpar, in_stream->codecpar) < 0) {
+    if (avcodec_parameters_copy(out_stream->codecpar, in_stream->codecpar) < 0) {
         fprintf(stderr, "Erreur avcodec_parameters_copy\n");
         return NULL;
     }
@@ -49,7 +49,7 @@ static AVStream *add_out_stream(AVFormatContext *output_ctx, AVStream *in_stream
     return out_stream;
 }
 
-static SegResult *write_idx_file(
+static SegResult write_idx_file(
     const char        *index,
     const char        *tmp_index,
     unsigned int       num_segments,
@@ -158,7 +158,7 @@ int max_list_length) {
 
     // détecte des flux vidéo/audio
     for (unsigned int i = 0; i < input_ctx->nb_streams; i++) {
-        enum AVMediaType type = input_ctx->streams[i]->codec->codec_type;
+        enum AVMediaType type = input_ctx->streams[i]->codecpar->codec_type;
         if (type == AVMEDIA_TYPE_VIDEO && input_video_idx < 0) input_video_idx = i;
         if (type == AVMEDIA_TYPE_AUDIO && input_audio_idx < 0) input_audio_idx = i;
     }
@@ -170,13 +170,13 @@ int max_list_length) {
 
     AVStream *out_video_stream = add_out_stream(output_ctx, input_ctx->streams[input_video_idx]);
     CHECK(!out_video_stream, "Impossible d'allouer le stream");
-    out_video_idx = out_video_stream->index;
+    output_video_idx = out_video_stream->index;
 
     AVStream *out_audio_stream = NULL;
-    if (input_audio_index >= 0) {
+    if (input_audio_idx >= 0) {
         AVStream *out_audio_stream = add_out_stream(output_ctx, input_ctx->streams[input_audio_idx]);
         CHECK(!out_video_stream, "Impossible d'allouer le stream");
-        out_audio_idx = out_audio_stream->index;
+        output_audio_idx = out_audio_stream->index;
     }
 
     CHECK(open_next_segment(
