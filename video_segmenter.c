@@ -168,14 +168,14 @@ int max_list_length) {
 
     CHECK(avformat_alloc_output_context2(&output_ctx, NULL, "mpegts", NULL) < 0, "Impossible d'allouer le ctx de sortie");
 
-    AVStream *out_video_stream = add_out_stream(output_ctx, input_ctx->streams[input_video_idx]);
-    CHECK(!out_video_stream, "Impossible d'allouer le stream");
-    output_video_idx = out_video_stream->index;
+    AVStream *output_video_stream = add_out_stream(output_ctx, input_ctx->streams[input_video_idx]);
+    CHECK(!output_video_stream, "Impossible d'allouer le stream");
+    output_video_idx = output_video_stream->index;
 
     AVStream *out_audio_stream = NULL;
     if (input_audio_idx >= 0) {
-        AVStream *out_audio_stream = add_out_stream(output_ctx, input_ctx->streams[input_audio_idx]);
-        CHECK(!out_video_stream, "Impossible d'allouer le stream");
+        AVStream *output_video_stream = add_out_stream(output_ctx, input_ctx->streams[input_audio_idx]);
+        CHECK(!output_video_stream, "Impossible d'allouer le stream");
         output_audio_idx = out_audio_stream->index;
     }
 
@@ -185,7 +185,7 @@ int max_list_length) {
 
     if (avformat_write_header(output_ctx, NULL) < 0) {
         avio_close(&output_ctx->pb);
-        CHECK("Impossible d'écrire l'en-tête MPEG-TS");
+        CHECK(1, "Impossible d'écrire l'en-tête MPEG-TS");
     }
     const double video_pts2time = av_q2d(input_ctx->streams[input_video_idx]->time_base);
     // alloc packet
@@ -259,9 +259,9 @@ int max_list_length) {
             if (old_filename[0]) unlink(old_filename);
             segment_start = pkt_time;
         }
-        if (pkt->stream_index == out_video_stream) {
+        if (pkt->stream_index == output_video_stream)
             prev_pkt_time = pkt_time;
-        }
+
         // Rescale timestamp : base tempo. input to output
         AVStream *in_stream = input_ctx->streams[orginal_stream_idx];
         AVStream *out_stream = output_ctx->streams[pkt->stream_index];
