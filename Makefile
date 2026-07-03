@@ -1,15 +1,15 @@
 # Variables
 SCRIPTS=install.sh video_processor.sh
-BIN=/usr/local/bin/video_processor.sh
-LOG=/var/log/video_processor.log
-VIDEO_TMP=/tmp/videos
+BIN=./usr/local/bin/video_processor.sh
+LOG=./var/log/video_processor.log
+VIDEO_TMP=./tmp/videos
 #TEST_VIDEO=ma_video.mp4
 
 #SCRIPTS=install.sh video_processor.sh
 #BIN=${HOME}/Works/video_orchestrator/src/main/resources/usr/local/bin/video_processor.sh
 #LOG=${HOME}/Works/video_orchestrator/src/main/resources/var/log/video_processor.log
 #VIDEO_TMP=${HOME}/Works/video_orchestrator/src/main/resources/tmp/videos
-TEST_VIDEO=ma_video.mp4
+TEST_VIDEO=video.mp4
 
 .PHONY: help chmod install logs test watch copy cleanup cron
 
