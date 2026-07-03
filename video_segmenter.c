@@ -172,11 +172,11 @@ int max_list_length) {
     CHECK(!output_video_stream, "Impossible d'allouer le stream");
     output_video_idx = output_video_stream->index;
 
-    AVStream *out_audio_stream = NULL;
+    AVStream *output_audio_stream = NULL;
     if (input_audio_idx >= 0) {
-        AVStream *output_video_stream = add_out_stream(output_ctx, input_ctx->streams[input_audio_idx]);
+        output_audio_stream = add_out_stream(output_ctx, input_ctx->streams[input_audio_idx]);
         CHECK(!output_video_stream, "Impossible d'allouer le stream");
-        output_audio_idx = out_audio_stream->index;
+        output_audio_idx = output_audio_stream->index;
     }
 
     CHECK(open_next_segment(
@@ -205,10 +205,8 @@ int max_list_length) {
                 segment_start = pkt_time;
             }
             pkt->stream_index = output_video_idx;
-            // ...
-        } else if (pkt->stream_index == input_audio_idx && out_audio_stream) {
-            pkt->stream_index = output_video_idx;
-            // ...
+        } else if (pkt->stream_index == input_audio_idx && output_audio_stream) {
+            pkt->stream_index = output_audio_idx;
         } else {
             av_packet_unref(pkt);
             continue;
@@ -259,7 +257,7 @@ int max_list_length) {
             if (old_filename[0]) unlink(old_filename);
             segment_start = pkt_time;
         }
-        if (pkt->stream_index == output_video_stream)
+        if (pkt->stream_index == output_video_idx)
             prev_pkt_time = pkt_time;
 
         // Rescale timestamp : base tempo. input to output
@@ -311,7 +309,7 @@ int main (int argc, char *argv[]) {
         return SEG_ERR;
     }
 
-    const char *input_file   = argv[1];
+    const char *input_file = argv[1];
     const char *output_dir = argv[2];
     const char *idx_file = argv[3];
     const char *base_name = argv[4];
@@ -334,9 +332,30 @@ int main (int argc, char *argv[]) {
     printf("Sortie : %s/%s-*%s\n", output_dir, base_name, ext);
     // add log + init segment_video
     // return result;
-    SegResult result = segment_video(input_file, output_dir, index_file,
-                                     base_name, extension,
-                                     segment_duration, max_segments);
+    SegResult result = segment_video(
+        input_file,
+        output_dir,
+        idx_file,
+        base_name,
+        ext,
+        segment_duration,
+        max_segments);
+
+    /*
+
+    const char *input_file,
+const char *base_dirpath,
+const char *output_idx_file,
+const char *base_file_name,
+const char *base_file_ext,
+int segment_length,
+int max_list_length
+
+
+
+     */
+
+
     printf("\n%s\n", result == SEG_OK ? "OK" : "FAIL");
     return result;
 }
