@@ -88,9 +88,10 @@ static SegResult write_idx_file(
 
     fclose(fp);
 
-    if (rename(tmp_index, prefix) < 0)
+    if (rename(tmp_index, prefix) != 0) {
         fprintf(stderr, "Erreur : rename '%s' > '%s' : %s\n", tmp_index, index, strerror(errno));
         return SEG_ERR;
+    }
 
     return SEG_OK;
 }
