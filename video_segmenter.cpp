@@ -31,7 +31,7 @@ typedef enum {
     SEG_ERR = -1
 } SegResult;
 
-// AVInputGuard protected avFormatContext in write
+// AVInputGuard protected avFormatContext in read
 struct AVInputGuard {
     AVFormatContext *ctx = nullptr;
     AVInputGuard() = default;
@@ -45,7 +45,7 @@ struct AVInputGuard {
     }
 };
 
-// AVInputGuard protected avFormatContext in read
+// AVInputGuard protected avFormatContext in write
 struct AVOutputGuard {
     AVFormatContext *ctx = nullptr;
     AVOutputGuard() = default;
