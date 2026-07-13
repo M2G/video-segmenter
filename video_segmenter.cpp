@@ -31,6 +31,19 @@ typedef enum {
     SEG_ERR = -1
 } SegResult;
 
+struct AVInputGuard {
+    AVFormatContext *ctx = nullptr;
+    AVInputGuard() = default;
+    ~AVInputGuard() {
+        if (ctx) avformat_close_input(&ctx);
+    }
+    AVInputGuard(const AVInputGuard &) = delete;
+    AVInputGuard &operator=(const AVInputGuard &) = delete;
+    AVInputGuard(AVInputGuard &&other) noexcept : ctx(other.ctx) {
+        other.ctx = nullptr;
+    }
+};
+
 // @see https://github.com/catchorg/Catch2/issues/929#issuecomment-308663820
 // @see https://github.com/catchorg/Catch2/issues/929#issuecomment-308663820
 #define CHECK(cond, msg, ...)                                     \
