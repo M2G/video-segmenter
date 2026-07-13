@@ -31,7 +31,7 @@ typedef enum {
     SEG_ERR = -1
 } SegResult;
 
-// AVInputGuard protected avFormatContext in read
+// AVInputGuard protected avFormatContext in write
 struct AVInputGuard {
     AVFormatContext *ctx = nullptr;
     AVInputGuard() = default;
@@ -41,6 +41,22 @@ struct AVInputGuard {
     AVInputGuard(const AVInputGuard &) = delete;
     AVInputGuard &operator=(const AVInputGuard &) = delete;
     AVInputGuard(AVInputGuard &&other) noexcept : ctx(other.ctx) {
+        other.ctx = nullptr;
+    }
+};
+
+// AVInputGuard protected avFormatContext in read
+struct AVOutputGuard {
+    AVFormatContext *ctx = nullptr;
+    AVOutputGuard() = default;
+    ~AVOutputGuard() {
+        if (ctx) return;
+        if (ctx->pb) avio_close(ctx->pb);
+        avformat_free_context(ctx);
+    }
+    AVOutputGuard(const AVOutputGuard &) = delete;
+    AVOutputGuard &operator=(const AVOutputGuard &) = delete;
+    AVOutputGuard(AVOutputGuard &&other) noexcept : ctx(other.ctx) {
         other.ctx = nullptr;
     }
 };
