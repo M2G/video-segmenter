@@ -1,14 +1,26 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
-#include <errno.h>
+#include <cstdlib.h>
+#include <cstdio.h>
+#include <cstring.h>
+#include <cmath.h>
+#include <cerrno.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <string>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <thread>
+#include <functional>
+
+extern "C" {
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
 #include "libavutil/mathematics.h"
+}
+
+// const
+constexpr int MAX_SEGMENTS = 4096;
 
 #define MAX_FILENAME_LENGTH 512
 #define MAX_SEGMENTS        4096
