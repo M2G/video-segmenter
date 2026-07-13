@@ -63,7 +63,13 @@ struct AVOutputGuard {
 
 struct AVPacketGuard {
     AVPacket *pkt = nullptr;
-    
+    AVPacketGuard() : pkt(av_packet_alloc()) {}
+    ~AVPacketGuard() {
+        if (pkt) av_packet_free(&pkt);
+    }
+    AVPacket *operator->() const { return pkt; }
+    AVPacket &operator*() const { return *pkt; }
+    // ...
 };
 
 // @see https://github.com/catchorg/Catch2/issues/929#issuecomment-308663820
