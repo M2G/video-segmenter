@@ -84,8 +84,14 @@ struct PacketQueue {
 
     std::condition_variable cv;
 
-    bool closed = false;
+    bool closed = false; // flag
 
+    const std::size_t capacity; // size max queue
+
+    explicit PacketQueue(std::size_t cap) : capacity(cap) {}
+
+    PacketQueue(const PacketQueue &) = delete;
+    PacketQueue &operator=(const PacketQueue &) = delete;
 };
 
 // @see https://github.com/catchorg/Catch2/issues/929#issuecomment-308663820
