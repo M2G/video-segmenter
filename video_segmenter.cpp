@@ -77,6 +77,17 @@ struct AVPacketGuard {
     AVPacketGuard &operator=(const AVPacketGuard &) = delete;
 };
 
+struct PacketQueue {
+    std::queue<AVPacket *> buffer;
+
+    std::mutex mtx;
+
+    std::condition_variable cv;
+
+    bool closed = false;
+
+};
+
 // @see https://github.com/catchorg/Catch2/issues/929#issuecomment-308663820
 // @see https://github.com/catchorg/Catch2/issues/929#issuecomment-308663820
 #define CHECK(cond, msg, ...)                                     \
