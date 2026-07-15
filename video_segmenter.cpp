@@ -92,6 +92,15 @@ struct PacketQueue {
 
     PacketQueue(const PacketQueue &) = delete;
     PacketQueue &operator=(const PacketQueue &) = delete;
+    void push (AVPacket *pkt) {
+        {
+            std::unique_lock<std::mutex> lock(mtx);
+            cv.wait(loc, [this] {
+                return buffer.size() < capacity || closed;
+            });
+            // ..
+        }
+    }
 };
 
 // @see https://github.com/catchorg/Catch2/issues/929#issuecomment-308663820
