@@ -148,6 +148,23 @@ struct IdxTask {
     std::string old_filename;
 };
 
+struct IdxQueue {
+    std::queue<IdxTask *> tasks;
+    std::mutex mtx;
+    std::condition_variable cv;
+    bool closed = false;
+
+    IdxQueue() = default;
+    IdxQueue(const IdxQueue &) = delete;
+    IdxQueue &operator=(const IdxQueue &) = delete;
+
+    void push (IdxTask *task) {}
+
+    bool pop (IdxTask *out) {}
+
+    void close() {}
+};
+
 
 
 // @see https://github.com/catchorg/Catch2/issues/929#issuecomment-308663820
