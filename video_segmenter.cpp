@@ -128,6 +128,14 @@ AVPacket *pop() {
     return pkt;
 }
 
+void close() {
+   {
+       std::unique_lock<std::mutex> lock(mtx);
+       closed = true;
+   }
+    cv.notify_all();
+}
+
 
 
 
