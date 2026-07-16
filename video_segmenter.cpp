@@ -19,17 +19,19 @@ extern "C" {
 #include "libavutil/mathematics.h"
 }
 
+namespace fs = std::filesystem;
+
 // const
 constexpr int MAX_SEGMENTS = 4096;
+
+enum class SegResult {
+    SEG_OK  =  0,
+    SEG_ERR = -1
+};
 
 #define MAX_FILENAME_LENGTH 512
 #define MAX_SEGMENTS        4096
 #define FF_INPUT_BUF_SIZE   128
-
-typedef enum {
-    SEG_OK  =  0,
-    SEG_ERR = -1
-} SegResult;
 
 // AVInputGuard protected avFormatContext in read
 struct AVInputGuard {
@@ -43,6 +45,7 @@ struct AVInputGuard {
     AVInputGuard(AVInputGuard &&other) noexcept : ctx(other.ctx) {
         other.ctx = nullptr;
     }
+    [[nodiscard]] bool is_open() const { return ctx != nullptr; }
 };
 
 // AVInputGuard protected avFormatContext in write
