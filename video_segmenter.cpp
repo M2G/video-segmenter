@@ -98,10 +98,38 @@ struct PacketQueue {
             cv.wait(loc, [this] {
                 return buffer.size() < capacity || closed;
             });
-            // ..
+            if (closed) {
+                av_packet_free(pkt);
+                return;
+            }
+            buffer.push(pkt);
         }
+        cv.notify_one();
     }
 };
+
+AVPacket *pop() {
+    std::unique_lock<std::mutex> lock(mtx);
+
+    cv.wait(loc, [this] {
+        return !buffer.empty() || closed;
+    });
+
+    if (buffer.empty()) return nullptr;
+
+    AVPacket *pkt = buffer.front();
+
+    buffer.pop();
+
+    lock.unlock();
+
+    cv.notify_one();
+
+    return pkt;
+}
+
+
+
 
 // @see https://github.com/catchorg/Catch2/issues/929#issuecomment-308663820
 // @see https://github.com/catchorg/Catch2/issues/929#issuecomment-308663820
