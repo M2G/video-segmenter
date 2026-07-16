@@ -79,15 +79,11 @@ struct AVPacketGuard {
 
 struct PacketQueue {
     std::queue<AVPacket *> buffer;
-
     std::mutex mtx;
-
     std::condition_variable cv;
 
     bool closed = false; // flag
-
     const std::size_t capacity; // size max queue
-
     explicit PacketQueue(std::size_t cap) : capacity(cap) {}
 
     PacketQueue(const PacketQueue &) = delete;
@@ -136,6 +132,21 @@ void close() {
     cv.notify_all();
 }
 
+struct IdxTask {
+    std::string idx_path;
+    std::string tmp_path;
+    std::string prefix;
+    std::string ext;
+
+
+    std::vector<unsigned int> durations;
+
+    unsigned int offset = 0;
+    unsigned int max_duration = 0;
+    bool islast = false;
+
+    std::string old_filename;
+};
 
 
 
