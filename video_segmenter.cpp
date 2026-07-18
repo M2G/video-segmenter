@@ -21,13 +21,15 @@ extern "C" {
 
 namespace fs = std::filesystem;
 
+using SegError = std::string;
+
+template<typename T>
+using Result = std::expected<T, SegError>;
+
+using VoidResult = std::expected<void, SegError>;
+
 // const
 constexpr int MAX_SEGMENTS = 4096;
-
-enum class SegResult {
-    SEG_OK  =  0,
-    SEG_ERR = -1
-};
 
 #define MAX_FILENAME_LENGTH 512
 #define MAX_SEGMENTS        4096
@@ -44,6 +46,14 @@ struct AVInputGuard {
     AVInputGuard &operator=(const AVInputGuard &) = delete;
     AVInputGuard(AVInputGuard &&other) noexcept : ctx(other.ctx) {
         other.ctx = nullptr;
+    }
+    AVInputGuard &operator=(AVInputGuard &&other) noexcept {
+        if (this != &other) {
+            if (ctx) avformat_close_input(&ctx);
+            ctx = other.ctx;
+            other.ctx = nullptr;
+        }
+        return *this;
     }
     [[nodiscard]] bool is_open() const { return ctx != nullptr; }
 };
