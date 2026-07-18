@@ -1,17 +1,20 @@
-#include <cstdlib.h>
-#include <cstdio.h>
-#include <cstring.h>
-#include <cmath.h>
-#include <cerrno.h>
+#include <cstdlib>
+#include <cstring>
+#include <cmath>
+#include <cerrno>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include <string>
+#include <vector>
 #include <queue>
 #include <mutex>
 #include <condition_variable>
 #include <thread>
-#include <functional>
+#include <optional>
+#include <expected>
+#include <print>
+#include <filesystem>
 
 extern "C" {
 #include "libavformat/avformat.h"
@@ -55,7 +58,21 @@ struct AVInputGuard {
         }
         return *this;
     }
+
     [[nodiscard]] bool is_open() const { return ctx != nullptr; }
+
+    static Result<AVInputGuard> open(const std::string &path) {
+        AVInputGuard guard;
+
+        int ret = avformat_open_input(&guard.ctx, path.c_str(), nullptr, nullptr);
+
+        if (ret < 0) {
+            char errbuf[FF_INPUT_BUF_SIZE];
+            av_strerror(ret, errbuf, sizeof(errbuf));
+            return std::unexpected(std::format("Impossible d'ouvrir '{}': {}", path, errbuf));
+        }
+        return guard;
+    }
 };
 
 // AVInputGuard protected avFormatContext in write
