@@ -69,7 +69,9 @@ struct AVInputGuard {
         if (ret < 0) {
             char errbuf[FF_INPUT_BUF_SIZE];
             av_strerror(ret, errbuf, sizeof(errbuf));
-            return std::unexpected(std::format("Impossible d'ouvrir '{}': {}", path, errbuf));
+            return std::unexpected(
+                std::format("Impossible d'ouvrir '{}': {}", path, errbuf)
+            );
         }
         return guard;
     }
@@ -110,7 +112,6 @@ struct AVOutputGuard {
         }
         return guard;
     }
-
 };
 
 
@@ -122,12 +123,29 @@ struct AVPacketGuard {
     }
     AVPacket *operator->() const { return pkt; }
     AVPacket &operator*() const { return *pkt; }
-
     operator AVPacket *() const { return pkt; }
-    explicit operator bool() const { return pkt != nullptr; }
+
+    [[nodiscard]] explicit operator bool() const { return pkt != nullptr; }
 
     AVPacketGuard(const AVPacketGuard &) = delete;
     AVPacketGuard &operator=(const AVPacketGuard &) = delete;
+
+    AVPacketGuard &operator=(AVPacketGuard &&other) noexcept {
+        if (this != &other) {
+            if (pkt) av_packet_free(&pkt);
+            pkt = other.pkt;
+            other.pkt = nullptr;
+        }
+        return *this;
+    }
+
+    static Result<AVPacketGuard> create(const std::string &format_name) {
+        AVPacketGuard guard;
+        if (!guard) {
+            return std::unexpected("Impossible d'allouer AVPacket");
+        }
+        return guard;
+    }
 };
 
 struct PacketQueue {
