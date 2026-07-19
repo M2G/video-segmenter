@@ -152,13 +152,14 @@ struct PacketQueue {
     std::queue<AVPacket *> buffer;
     std::mutex mtx;
     std::condition_variable cv;
-
     bool closed = false; // flag
     const std::size_t capacity; // size max queue
+
     explicit PacketQueue(std::size_t cap) : capacity(cap) {}
 
     PacketQueue(const PacketQueue &) = delete;
     PacketQueue &operator=(const PacketQueue &) = delete;
+
     void push (AVPacket *pkt) {
         {
             std::unique_lock<std::mutex> lock(mtx);
@@ -173,35 +174,11 @@ struct PacketQueue {
         }
         cv.notify_one();
     }
+
+    // ... [[nodiscard]] pop + close
 };
 
-AVPacket *pop() {
-    std::unique_lock<std::mutex> lock(mtx);
 
-    cv.wait(loc, [this] {
-        return !buffer.empty() || closed;
-    });
-
-    if (buffer.empty()) return nullptr;
-
-    AVPacket *pkt = buffer.front();
-
-    buffer.pop();
-
-    lock.unlock();
-
-    cv.notify_one();
-
-    return pkt;
-}
-
-void close() {
-   {
-       std::unique_lock<std::mutex> lock(mtx);
-       closed = true;
-   }
-    cv.notify_all();
-}
 
 struct IdxTask {
     std::string idx_path;
@@ -229,7 +206,13 @@ struct IdxQueue {
     IdxQueue(const IdxQueue &) = delete;
     IdxQueue &operator=(const IdxQueue &) = delete;
 
-    void push (IdxTask *task) {}
+    void push (IdxTask *task) {
+        {
+            std::unique_lock<std::mutex> lock(mtx);
+            tasks.push(std::move(task));
+        }
+        cv.notify_one();
+    }
 
     bool pop (IdxTask *out) {}
 
