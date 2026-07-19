@@ -89,7 +89,30 @@ struct AVOutputGuard {
     AVOutputGuard(AVOutputGuard &&other) noexcept : ctx(other.ctx) {
         other.ctx = nullptr;
     }
+
+    AVOutputGuard &operator=(AVOutputGuard &&other) noexcept {
+        if (this != &other) {
+            if (ctx) {
+                if (ctx->pb) avio_close(ctx->pb);
+                avformat_free_context(ctx);
+            }
+            ctx = other.ctx;
+            other.ctx = nullptr;
+        }
+        return *this;
+    }
+
+    static Result<AVOutputGuard> create(const std::string &format_name) {
+        AVOutputGuard guard;
+        avformat_alloc_output_context2(&guard.ctx, nullptr, nullptr, format_name.c_str(), nullptr);
+        if (!guard.ctx) {
+            return std::unexpected(std::format("Impossible d'allouer le ctx de sortie '{}'", format_name));
+        }
+        return guard;
+    }
+
 };
+
 
 struct AVPacketGuard {
     AVPacket *pkt = nullptr;
