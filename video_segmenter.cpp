@@ -205,6 +205,83 @@ struct PacketQueue {
     }
 };
 
+Result<AVStream *>add_out_stream(AVFormatContext *output_ctx, AVStream *in_stream) {
+    AVStream *out_stream = avformat_new_stream(output_ctx, nullptr);
+
+    if (!out_stream) {
+        return std::unexpected("Impossible d'allouer le flux de sortie");
+    }
+
+    // copy param codec
+    if (avcodec_parameters_copy(out_stream->codecpar, in_stream->codecpar) < 0) {
+        return std::unexpected("Impossible de copier les paramètres du codec");
+    }
+
+    out_stream->codecpar->codec_tag = 0;
+    out_stream->time_base = in_stream->time_base;
+    return out_stream;
+}
+
+Result<void>write_idx_file(
+    const std::string &index_path,
+    const std::string &tmp_path,
+    const std::vector<unsigned int> &durations,
+    unsigned int offset,
+    const std::string &prefix,
+    const std::string &ext,
+    unsigned int max_duration,
+    bool islast
+) {
+
+    if (durations.empty()) {
+        return {};
+    }
+
+    FILE *fp = fopen(tmp_path.c_str(), "w");
+    if (!fp) {
+        return std::unexpected(std::format("Erreur: Impossible d'ouvrir '%s' pour écriture: %s\n", tmp_path, std::strerror(errno)));
+    }
+
+    std::print(fp, "#EXTM3U\n#EXT-X-VERSION:3\n"
+                    "#EXT-X-MEDIA-SEQUENCE:{}\n#EXT-X-TARGETDURATION:{}\n",
+               offset, max_duration);
+
+    for (std::size_t i = 0; i < durations.size(); i++) {
+        std::print(fp, "#EXTINF:{},\n{}-{}{}\n",
+                   durations[i], prefix, i + offset, ext);
+    }
+
+    if (islast) std::print(fp, "#EXT-X-ENDLIST\n");
+
+    fclose(fp);
+
+    if (std::error_code ec; !fs::exists(tmp_path) ||
+        (fs::rename(tmp_path,index_path, ec), ec)) {
+        return std::expected(std::format("Impossible de renommer '{}' vers '{}'", tmp_path, index_path));
+    }
+
+    return {};
+}
+
+Result<std::string> open_next_segment(
+    AVFormatContext *output_ctx,
+    const std::string &dir,
+    const std::string &name,
+    unsigned int idx,
+    const std::string &ext
+) {
+    std::string filename = std::format("{}/{}-{}{}", dir, name, idx, ext);
+
+    if (avio_open(&output_ctx->pb, filename.c_str(), AVIO_FLAG_WRITE) < 0)
+    return std::unexpected(std::format("Impossible d'ouvrir '{}'", filename));
+
+    std::println("Segment : '{}'", filename);
+    return filename;
+}
+
+void thread_reader(){}
+
+
 struct IdxTask {
     std::string idx_path;
     std::string tmp_path;
@@ -257,90 +334,11 @@ do {                                                          \
     }                                                         \
 } while((void)0, 0)
 
-static AVStream *add_out_stream(AVFormatContext *output_ctx, AVStream *in_stream) {
-     AVStream *out_stream = avformat_new_stream(output_ctx, NULL);
 
-    if (!out_stream) {
-        fprintf(stderr, "Erreur: Impossible d'allouer le flux de sortie\n");
-        return NULL;
-    }
 
-    // copy param codec
-    if (avcodec_parameters_copy(out_stream->codecpar, in_stream->codecpar) < 0) {
-        fprintf(stderr, "Erreur avcodec_parameters_copy\n");
-        return NULL;
-    }
 
-    out_stream->codecpar->codec_tag = 0;
-    out_stream->time_base = in_stream->time_base;
-    return out_stream;
-}
 
-static SegResult write_idx_file(
-    const char        *index,
-    const char        *tmp_index,
-    unsigned int       num_segments,
-    const unsigned int *durations,
-    unsigned int       offset,
-    const char        *prefix,
-    const char        *ext,
-    unsigned int       max_duration,
-    int                islast
-) {
-    if (num_segments < 1) return SEG_OK;
 
-    FILE *fp = fopen(tmp_index, "w");
-    if (!fp) {
-        fprintf(stderr, "Erreur: Impossible d'ouvrir '%s' pour écriture: %s\n", tmp_index, strerror(errno));
-        return SEG_ERR;
-    }
-
-    fprintf(fp, "#EXTM3U\n"
-                "#EXT-X-VERSION:3\n"
-                "#EXT-X-MEDIA-SEQUENCE:%u\n"
-                "#EXT-X-TARGETDURATION:%u\n",
-            offset, max_duration);
-
-    for (unsigned int i = 0; i < num_segments; i++) {
-        // if (fp, duration[i], prefix, i + offset, ext < 0) fclose(fp);
-        if (fprintf(fp, "#EXTINF:%u,\n%s-%u%s\n", durations[i], prefix, i + offset, ext) < 0) {
-            fprintf(stderr, "Erreur : Échec écriture idx\n");
-            fclose(fp);
-
-            return SEG_ERR;
-        }
-    }
-
-    if (islast) fprintf(fp, "#EXT-X-ENDLIST\n");
-
-    fclose(fp);
-
-    if (rename(tmp_index, prefix) != 0) {
-        fprintf(stderr, "Erreur : rename '%s' > '%s' : %s\n", tmp_index, index, strerror(errno));
-        return SEG_ERR;
-    }
-
-    return SEG_OK;
-}
-
-static SegResult open_next_segment(
-    AVFormatContext *output_ctx,
-    char *filename_out,
-    size_t filename_size,
-    const char *dir,
-    const char *name,
-    unsigned int idx,
-    const char *ext
-) {
-    snprintf(filename_out, filename_size, "%s/%s-%u%s", dir, name, idx, ext);
-
-    if (avio_open(&output_ctx->pb, filename_out, AVIO_FLAG_WRITE) < 0)
-        fprintf(stderr, "Erreur : Impossible d'ouvrir '%s'\n", filename_out);
-        return SEG_ERR;
-
-    printf("Segment : '%s'\n", filename_out);
-    return SEG_OK;
-}
 
 static SegResult segment_video(
 const char *input_file,
