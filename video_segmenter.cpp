@@ -279,7 +279,19 @@ Result<std::string> open_next_segment(
     return filename;
 }
 
-void thread_reader(){}
+void thread_reader(
+    AVFormatContext *input_ctx,
+    int in_video_idx,
+    int in_audio_idx,
+    PacketQueue &queue
+    ) {
+    auto pkt_result = AVPacket::create();
+    if (!pkt_result) {
+        std::println(stderr, "[Lecteur] Erreur: {}", pkt_result.error());
+        queue.close();
+        return;
+    }
+}
 
 
 struct IdxTask {
