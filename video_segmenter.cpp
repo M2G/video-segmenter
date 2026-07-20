@@ -175,10 +175,35 @@ struct PacketQueue {
         cv.notify_one();
     }
 
-    // ... [[nodiscard]] pop + close
+    [[nodiscard]] AVPacket *pop() {
+        std::unique_lock<std::mutex> lock(mtx);
+
+        cv.wait(loc, [this] {
+            return !buffer.empty() || closed;
+        });
+
+        if (buffer.empty()) return nullptr;
+
+        AVPacket *pkt = buffer.front();
+        buffer.pop();
+
+        lock.unlock();
+        cv.notify_one();
+
+        return pkt;
+    }
+    void close() {
+        {
+            std::unique_lock<std::mutex> lock(mtx);
+            closed = true;
+        }
+        cv.notify_all();
+    }
+    [[nodiscard]] std::size_t size() {
+        std::unique_lock lock(mtx);
+        return buffer.size();
+    }
 };
-
-
 
 struct IdxTask {
     std::string idx_path;
