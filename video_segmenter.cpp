@@ -367,12 +367,27 @@ struct IdxQueue {
 
     [[nodiscard]] std::optional<IdxTask> pop () {
         std::unique_lock lock(mtx);
-        //...
+
+        cv.wait(lock, [this] {
+            return !tasks.empty() || closed;
+        });
+
+        if (tasks.empty()) {
+            return std::nullopt;
+        }
+
+        IdxTask out = std::move(tasks.front());
+        tasks.pop();
+
         return out;
     }
 
     void close() {
-        //...
+       {
+           std::unique_lock lock(mtx);
+           closed = true;
+       }
+        cv.notify_all();
     }
 
     [[nodiscard]] std::size_t size () {
