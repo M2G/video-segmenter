@@ -22,6 +22,7 @@ extern "C" {
 #include "libavutil/mathematics.h"
 }
 
+// manage error
 namespace fs = std::filesystem;
 
 using SegError = std::string;
@@ -38,7 +39,7 @@ constexpr int MAX_SEGMENTS = 4096;
 #define MAX_SEGMENTS        4096
 #define FF_INPUT_BUF_SIZE   128
 
-// AVInputGuard protected avFormatContext in read
+// Wrappers RAII FFMPEG
 struct AVInputGuard {
     AVFormatContext *ctx = nullptr;
     AVInputGuard() = default;
@@ -63,7 +64,6 @@ struct AVInputGuard {
 
     static Result<AVInputGuard> open(const std::string &path) {
         AVInputGuard guard;
-
         int ret = avformat_open_input(&guard.ctx, path.c_str(), nullptr, nullptr);
 
         if (ret < 0) {
@@ -106,14 +106,13 @@ struct AVOutputGuard {
 
     static Result<AVOutputGuard> create(const std::string &format_name) {
         AVOutputGuard guard;
-        avformat_alloc_output_context2(&guard.ctx, nullptr, nullptr, format_name.c_str(), nullptr);
+        avformat_alloc_output_context2(&guard.ctx, nullptr, format_name.c_str(), nullptr);
         if (!guard.ctx) {
             return std::unexpected(std::format("Impossible d'allouer le ctx de sortie '{}'", format_name));
         }
         return guard;
     }
 };
-
 
 struct AVPacketGuard {
     AVPacket *pkt = nullptr;
@@ -123,12 +122,16 @@ struct AVPacketGuard {
     }
     AVPacket *operator->() const { return pkt; }
     AVPacket &operator*() const { return *pkt; }
-    operator AVPacket *() const { return pkt; }
+    operator AVPacket*() const { return pkt; }
 
     [[nodiscard]] explicit operator bool() const { return pkt != nullptr; }
 
     AVPacketGuard(const AVPacketGuard &) = delete;
     AVPacketGuard &operator=(const AVPacketGuard &) = delete;
+
+    AVPacketGuard(AVPacketGuard &&other) noexcept : pkt(other.pkt) {
+        other.pkt = nullptr;
+    }
 
     AVPacketGuard &operator=(AVPacketGuard &&other) noexcept {
         if (this != &other) {
@@ -139,7 +142,13 @@ struct AVPacketGuard {
         return *this;
     }
 
-    static Result<AVPacketGuard> create(const std::string &format_name) {
+    [[nodiscard]] AVPacket *release() {
+        AVPacket *tmp = pkt;
+        pkt = nullptr;
+        return tmp;
+    }
+
+    static Result<AVPacketGuard> create() {
         AVPacketGuard guard;
         if (!guard) {
             return std::unexpected("Impossible d'allouer AVPacket");
@@ -149,7 +158,7 @@ struct AVPacketGuard {
 };
 
 struct PacketQueue {
-    std::queue<AVPacket *> buffer;
+    std::queue<AVPacket *> buffer{};
     std::mutex mtx;
     std::condition_variable cv;
     bool closed = false; // flag
@@ -162,8 +171,8 @@ struct PacketQueue {
 
     void push (AVPacket *pkt) {
         {
-            std::unique_lock<std::mutex> lock(mtx);
-            cv.wait(loc, [this] {
+            std::unique_lock lock(mtx);
+            cv.wait(lock, [this] {
                 return buffer.size() < capacity || closed;
             });
             if (closed) {
@@ -176,9 +185,9 @@ struct PacketQueue {
     }
 
     [[nodiscard]] AVPacket *pop() {
-        std::unique_lock<std::mutex> lock(mtx);
+        std::unique_lock lock(mtx);
 
-        cv.wait(loc, [this] {
+        cv.wait(lock, [this] {
             return !buffer.empty() || closed;
         });
 
@@ -194,7 +203,7 @@ struct PacketQueue {
     }
     void close() {
         {
-            std::unique_lock<std::mutex> lock(mtx);
+            std::unique_lock lock(mtx);
             closed = true;
         }
         cv.notify_all();
@@ -285,28 +294,56 @@ void thread_reader(
     int in_audio_idx,
     PacketQueue &queue
     ) {
-    auto pkt_result = AVPacket::create();
+    auto pkt_result = AVPacketGuard::create("mpegts");
     if (!pkt_result) {
         std::println(stderr, "[Lecteur] Erreur: {}", pkt_result.error());
         queue.close();
         return;
     }
+    AVPacketGuard pkt = std::move(*pkt_result);
+
+    while (av_read_frame(input_ctx, pkt) >= 0) {
+        bool is_video = (pkt->stream_index == in_video_idx);
+        bool is_audio = (pkt->stream_index == in_audio_idx);
+
+        if (!is_video && !is_audio) {
+            av_packet_unref(pkt);
+            continue;
+        }
+
+        auto copy_result = AVPacketGuard::create("mpegts");
+        if (!copy_result) {
+            std::println(stderr, "[Lecteur] Erreur: {}", copy_result.error());
+            av_packet_unref(pkt);
+            break;
+        }
+        AVPacketGuard copy = std::move(*pkt);
+        if (av_packet_ref(copy, pkt) < 0) {
+            std::println(stderr, "[Lecteur] Erreur: av_packet_ref failed");
+            av_packet_unref(pkt);
+            break;
+        }
+        AVPacket *raw = copy.pkt;
+        copy.pkt = nullptr;
+
+        queue.push(raw);
+
+        av_packet_unref(raw);
+    }
+    queue.close();
+    std::println("[Lecteur] Terminé");
 }
 
-
+// IdxTask + IdxQueue
 struct IdxTask {
     std::string idx_path;
     std::string tmp_path;
     std::string prefix;
     std::string ext;
-
-
     std::vector<unsigned int> durations;
-
     unsigned int offset = 0;
     unsigned int max_duration = 0;
     bool islast = false;
-
     std::string old_filename;
 };
 
@@ -322,15 +359,26 @@ struct IdxQueue {
 
     void push (IdxTask *task) {
         {
-            std::unique_lock<std::mutex> lock(mtx);
+            std::unique_lock lock(mtx);
             tasks.push(std::move(task));
         }
         cv.notify_one();
     }
 
-    bool pop (IdxTask *out) {}
+    [[nodiscard]] std::optional<IdxTask> pop () {
+        std::unique_lock lock(mtx);
+        //...
+        return out;
+    }
 
-    void close() {}
+    void close() {
+        //...
+    }
+
+    [[nodiscard]] std::size_t size () {
+        std::unique_lock lock(mtx);
+        return tasks.size();
+    }
 };
 
 
