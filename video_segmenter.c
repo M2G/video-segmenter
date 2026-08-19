@@ -171,13 +171,13 @@ int max_list_length) {
     CHECK(avformat_alloc_output_context2(&output_ctx, NULL, "mpegts", NULL) < 0, "Impossible d'allouer le ctx de sortie");
 
     AVStream *output_video_stream = add_out_stream(output_ctx, input_ctx->streams[input_video_idx]);
-    CHECK(!output_video_stream, "Impossible d'allouer le stream");
+    CHECK(!output_video_stream, "Impossible d'allouer le stream vidéo");
     output_video_idx = output_video_stream->index;
 
     AVStream *output_audio_stream = NULL;
     if (input_audio_idx >= 0) {
         output_audio_stream = add_out_stream(output_ctx, input_ctx->streams[input_audio_idx]);
-        CHECK(!output_video_stream, "Impossible d'allouer le stream");
+        CHECK(!output_audio_stream, "Impossible d'allouer le stream audio");
         output_audio_idx = output_audio_stream->index;
     }
 
@@ -198,7 +198,7 @@ int max_list_length) {
         int is_keyframe = 0;
         int orginal_stream_idx = pkt->stream_index;
 
-        if (pkt->stream_index == orginal_stream_idx) {
+        if (pkt->stream_index == input_video_idx) {
             pkt_time = pkt->pts * video_pts2time;
             is_keyframe = pkt->flags & AV_PKT_FLAG_KEY;
             if (is_keyframe && wait_first_keyframe) {
@@ -226,35 +226,42 @@ int max_list_length) {
 
             unsigned int seg_dur = (unsigned int)rint(prev_pkt_time - segment_start);
             durations[num_segments] = seg_dur;
-            if (seg_dur < max_duration) max_duration = seg_dur;
+            if (seg_dur > max_duration) max_duration = seg_dur;
             num_segments++;
 
             char old_filename[MAX_FILENAME_LENGTH];
             old_filename[0] = '\0';
-            if (max_duration > 0 && num_segments > (unsigned int)max_list_length) {
+            if (max_list_length > 0 && num_segments > (unsigned int)max_list_length) {
                 snprintf(old_filename, MAX_FILENAME_LENGTH, "%s/%s-%u%s", base_dirpath, base_file_name, list_offset, base_file_ext);
                 list_offset++;
                 num_segments--;
                 memmove(durations, durations + 1, num_segments * sizeof(durations[0]));
 
                 // cacul (again) max dur only if seg deleted was max
-                if (durations[0] >= max_duration)
+                if (durations[0] >= max_duration) {
                     max_duration = 0;
                     for (unsigned int i = 0; i < num_segments; i++)
                         if (durations[i] > max_duration) max_duration = durations[i];
+                }
             }
             // write_idx_file
             write_idx_file(output_idx_file, tmp_idx_file, num_segments, durations, list_offset, base_file_name, base_file_ext, max_duration, 0);
 
-            if (num_segments >= MAX_SEGMENTS)
+            // error fatal, stop -> set ret 'SEG_ERR' and goto
+            if (num_segments >= MAX_SEGMENTS) {
                 fprintf(stderr, "Too many segments (%u)\n", MAX_SEGMENTS);
                 av_packet_unref(pkt);
-                break;
+                ret = SEG_ERR;
+                goto cleanup;
+            }
+
+            ++output_idx;
 
             // open seg next and delete older (unlink diff)
-            if (open_next_segment(output_ctx, current_file_name, MAX_FILENAME_LENGTH, base_dirpath, base_file_name, output_idx + 1, base_file_ext) != SEG_OK) {
+            if (open_next_segment(output_ctx, current_file_name, MAX_FILENAME_LENGTH, base_dirpath, base_file_name, output_idx, base_file_ext) != SEG_OK) {
                 av_packet_unref(pkt);
-                break;
+                ret = SEG_ERR;
+                goto cleanup;
             }
             if (old_filename[0]) unlink(old_filename);
             segment_start = pkt_time;
@@ -270,10 +277,12 @@ int max_list_length) {
         pkt->duration = av_rescale_q(pkt->duration, in_stream->time_base, out_stream->time_base);
         pkt->pos = -1;
 
+        // erreur fatal, stop and do not continue
         if (av_interleaved_write_frame(output_ctx, pkt) < 0) {
             fprintf(stderr, "Erreur : Impossible d'écrire le paquet\n");
             av_packet_unref(pkt);
-            break;
+            ret = SEG_ERR;
+            goto cleanup;
         }
     }
 
