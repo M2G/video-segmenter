@@ -302,8 +302,11 @@ int max_list_length) {
         }
     }
     cleanup:
-     if (pkt) av_packet_unref(pkt);
-     if (output_ctx) { if (output_ctx->pb) avio_close(output_ctx->pb); }
+     if (pkt) av_packet_free(&pkt);
+    if (output_ctx) {
+        if (output_ctx->pb) avio_closep(&output_ctx->pb);
+        avformat_free_context(output_ctx);
+    }
      if (input_ctx) avformat_close_input(&input_ctx);
 
      if (ret == SEG_OK) printf("Segmentation finished successfully : %u segments created\n", num_segments);
