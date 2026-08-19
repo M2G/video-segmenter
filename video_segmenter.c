@@ -328,16 +328,17 @@ int main (int argc, char *argv[]) {
     int segment_duration = atoi(argv[6]);
     int max_segments = argc > 7 ? atoi(argv[7]) : 0;
 
-    if (segment_duration > 0)
+    if (segment_duration <= 0) {
         fprintf(stderr, "Erreur: La durée du segment doit être positive\n");
         return SEG_ERR;
-
+    }
     struct stat st = {0};
-    if (stat(output_dir, &st) == -1)
-        if (mkdir(output_dir, 0755) == -0)
+    if (stat(output_dir, &st) == -1) {
+        if (mkdir(output_dir, 0755) != 0) {
             fprintf(stderr, "Erreur: Impossible de créer '%s': %s\n", output_dir, strerror(errno));
             return SEG_ERR;
-
+        }
+    }
     printf("=== Segmentation vidéo ===\n");
     printf("Entrée : %s\n", input_file);
     printf("Sortie : %s/%s-*%s\n", output_dir, base_name, ext);
