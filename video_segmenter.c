@@ -107,9 +107,10 @@ static SegResult open_next_segment(
 ) {
     snprintf(filename_out, filename_size, "%s/%s-%u%s", dir, name, idx, ext);
 
-    if (avio_open(&output_ctx->pb, filename_out, AVIO_FLAG_WRITE) < 0)
+    if (avio_open(&output_ctx->pb, filename_out, AVIO_FLAG_WRITE) < 0) {
         fprintf(stderr, "Erreur : Impossible d'ouvrir '%s'\n", filename_out);
         return SEG_ERR;
+    }
 
     printf("Segment : '%s'\n", filename_out);
     return SEG_OK;
