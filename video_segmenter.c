@@ -297,13 +297,8 @@ int max_list_length) {
             if (last_dur > max_duration) max_duration = last_dur;
             num_segments++;
 
-            write_idx_file(output_idx_file, tmp_idx_file, num_segments, durations, list_offset, base_file_name, base_file_ext, max_duration, 0);
-            // durations[num_seg] = last_dur;
-            // if last_dur > max_dur max_dur = last_dur;
-            // last_dur must > 1s
-            // num_seg++;
-
-            // write_idx_file(output_idx_file, tmp_idx_file, num_segments, durations, list_offset, base_file_name, base_file_ext, max_duration, 1);
+            write_idx_file(output_idx_file, tmp_idx_file, num_segments, durations,
+                 list_offset, base_file_name, base_file_ext, max_duration, 1);
         }
     }
     cleanup:
