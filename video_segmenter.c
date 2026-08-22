@@ -13,6 +13,11 @@
 #define MAX_FILENAME_LENGTH 512
 #define MAX_SEGMENTS        4096
 #define FF_INPUT_BUF_SIZE   128
+// Marge de tolérance (secondes) avant la durée cible d'un segment.
+// Sans cette marge, une keyframe arrivant juste après la durée exacte
+// (ex: 10.01s au lieu de 10.0s) ferait attendre la keyframe suivante,
+// produisant des segments trop longs (une sorte de curseur d'ajustement du temps).
+#define SEGMENT_DURATION_MARGIN 0.25
 
 typedef enum {
     SEG_OK  =  0,
@@ -219,7 +224,7 @@ int max_list_length) {
             continue;
         }
 
-        if (is_keyframe && (pkt_time - segment_start) >= (segment_length - 0.25)) {
+        if (is_keyframe && (pkt_time - segment_start) >= (segment_length - SEGMENT_DURATION_MARGIN)) {
             avio_flush(output_ctx->pb);
             avio_closep(&output_ctx->pb);
 
