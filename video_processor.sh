@@ -184,7 +184,6 @@ EOF
     fi
 }
 
-# Traite tous les MP4 du dossier
 process_all_videos() {
     local count=0
     local success=0
@@ -192,9 +191,9 @@ process_all_videos() {
 
     log "Recherche de vidéos à traiter dans: $WATCH_DIR"
 
-    # Parcourt tous les fichiers MP4
+    shopt -s nocaseglob
     for video in "$WATCH_DIR"/*.mp4; do
-        # Vérifie si le fichier existe (le glob peut ne rien trouver)
+        # Vérif. si le fichier existe (le glob peut ne rien trouver)
         if [ ! -f "$video" ]; then
             continue
         fi
