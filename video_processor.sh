@@ -206,6 +206,7 @@ process_all_videos() {
             failed=$((failed + 1))
         fi
     done
+    shopt -u nocaseglob
 
     if [ $count -gt 0 ]; then
         log "========================================="
@@ -223,11 +224,10 @@ watch_mode() {
 
     while true; do
         process_all_videos
-        sleep 30  # Vérifie toutes les 30 secondes
+        sleep 30  # Vérif. toutes les 30 secondes
     done
 }
 
-# Nettoie les anciens fichiers traités
 cleanup_old_files() {
     local days=${1:-7}
     log "Nettoyage des fichiers de plus de $days jours..."
@@ -238,22 +238,17 @@ cleanup_old_files() {
     log "Nettoyage terminé"
 }
 
-#############################################
-# Script principal
-#############################################
-
 main() {
-    # Initialisation
     init_directories
 
-    # Vérifie les dépendances
+    # Vérif. les déps.
     if [ ! -x "$SEGMENTER" ]; then
         error "Le binaire $SEGMENTER n'existe pas ou n'est pas exécutable"
         error "Lancez d'abord: bash install.sh"
         exit 1
     fi
 
-    # Vérifie le lock
+    # Vérif. le lock
     if ! acquire_lock; then
         exit 1
     fi
@@ -261,7 +256,7 @@ main() {
     # Trap pour libérer le lock à la sortie
     trap release_lock EXIT INT TERM
 
-    # Parse les arguments
+    # Parse les args.
     case "${1:-}" in
         watch)
             watch_mode
