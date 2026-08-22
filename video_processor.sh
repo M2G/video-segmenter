@@ -131,7 +131,7 @@ process_video() {
         return 1
     fi
 
-    # Vérifie que le fichier est stable
+    # Vérif. que le fichier est stable
     log "Vérification de la stabilité du fichier..."
     local attempts=0
     local max_attempts=5  # Réduit de 10 à 5 pour 10 secondes total
