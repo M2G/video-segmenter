@@ -18,6 +18,8 @@
 // (ex: 10.01s au lieu de 10.0s) ferait attendre la keyframe suivante,
 // produisant des segments trop longs (une sorte de curseur d'ajustement du temps).
 #define SEGMENT_DURATION_MARGIN 0.25
+#define MSG_SUCCESS "OK"
+#define MSG_FAILURE "Fail"
 
 typedef enum {
     SEG_OK  =  0,
@@ -356,6 +358,6 @@ int main (int argc, char *argv[]) {
         max_segments);
 
 
-    printf("\n%s\n", result == SEG_OK ? "OK" : "FAIL");
+    printf("\n%s\n", result == SEG_OK ? MSG_SUCCESS : MSG_FAILURE);
     return result;
 }
