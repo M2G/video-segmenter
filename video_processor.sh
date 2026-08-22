@@ -160,15 +160,13 @@ process_video() {
 
     # Lance la segmentation
     log "Lancement de la segmentation..."
-    log "Commande: $SEGMENTER \"$processing_file\" \"$output_subdir\" \"$index_file\" \"segment\" \"$EXTENSION\" $SEGMENT_DURATION $MAX_SEGMENTS"
+    log "Commande: $SEGMENTER \"$processing_file\" \"$output_subdir\" \"$index_file\" \"segment\" \"$EXTENSION\" \"$SEGMENT_DURATION\" \"$MAX_SEGMENTS\""
 
-    if "$SEGMENTER" "$processing_file" "$output_subdir" "$index_file" "segment" "$EXTENSION" $SEGMENT_DURATION $MAX_SEGMENTS >> "$LOG_FILE" 2>&1; then
+    if "$SEGMENTER" "$processing_file" "$output_subdir" "$index_file" "segment" "$EXTENSION" "$SEGMENT_DURATION" "$MAX_SEGMENTS" >> "$LOG_FILE" 2>&1; then
         log "Segmentation réussie: $filename"
 
-        # Déplace vers done
         mv "$processing_file" "$DONE_DIR/"
 
-        # Crée un fichier info
         cat > "$output_subdir/info.txt" <<EOF
 Fichier source: $filename
 Date de traitement: $(date '+%Y-%m-%d %H:%M:%S')
