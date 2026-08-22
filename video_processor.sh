@@ -1,40 +1,41 @@
 #!/bin/bash
 
 #############################################
-# Video Processor - Script de surveillance
+# Video Processor : Script de surveillance
 # Traite automatiquement les MP4 d'un dossier
 #############################################
 
-# Configuration
-#WATCH_DIR="$HOME/Works/video_orchestrator/src/main/resources/tmp/videos"
-#OUTPUT_DIR="$HOME/Works/video_orchestrator/src/main/resources/var/www/html/streams"
-#PROCESSING_DIR="$HOME/Works/video_orchestrator/src/main/resources/tmp/videos/processing"
-#DONE_DIR="$HOME/Works/video_orchestrator/src/main/resources/tmp/videos/done"
-#ERROR_DIR="$HOME/Works/video_orchestrator/src/main/resources/tmp/videos/error"
-#LOG_FILE="$HOME/Works/video_orchestrator/src/main/resources/var/log/video_processor.log"
-#LOCK_FILE="$HOME/Works/video_orchestrator/src/main/resources/var/run/video_processor.lock"
+# Répertoire du script : ancre les chemins relatifs, indépendamment du cwd d'appel
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Contexte d'exécution : "dev" (chemins relatifs au script) ou "prod" (chemins absolus)
+# Bascule en une seule ligne : APP_CONTEXT=prod ./video_processor.sh
+APP_CONTEXT="${APP_CONTEXT:-dev}"
 
-WATCH_DIR="./tmp/videos"
-OUTPUT_DIR="./var/www/html/streams"
-PROCESSING_DIR="./tmp/videos/processing"
-DONE_DIR="./tmp/videos/done"
-ERROR_DIR="./tmp/videos/error"
-LOG_FILE="./var/log/video_processor.log"
-LOCK_FILE="./var/run/video_processor.lock"
+if [ "$APP_CONTEXT" = "prod" ]; then
+    WATCH_DIR="$HOME/Works/video_orchestrator/src/main/resources/tmp/videos"
+    OUTPUT_DIR="$HOME/Works/video_orchestrator/src/main/resources/var/www/html/streams"
+    PROCESSING_DIR="$HOME/Works/video_orchestrator/src/main/resources/tmp/videos/processing"
+    DONE_DIR="$HOME/Works/video_orchestrator/src/main/resources/tmp/videos/done"
+    ERROR_DIR="$HOME/Works/video_orchestrator/src/main/resources/tmp/videos/error"
+    LOG_FILE="$HOME/Works/video_orchestrator/src/main/resources/var/log/video_processor.log"
+    LOCK_FILE="$HOME/Works/video_orchestrator/src/main/resources/var/run/video_processor.lock"
+    SEGMENTER="$HOME/Works/video_orchestrator/src/main/resources/usr/local/bin/video_segmenter"
+else
+    WATCH_DIR="$SCRIPT_DIR/tmp/videos"
+    OUTPUT_DIR="$SCRIPT_DIR/var/www/html/streams"
+    PROCESSING_DIR="$SCRIPT_DIR/tmp/videos/processing"
+    DONE_DIR="$SCRIPT_DIR/tmp/videos/done"
+    ERROR_DIR="$SCRIPT_DIR/tmp/videos/error"
+    LOG_FILE="$SCRIPT_DIR/var/log/video_processor.log"
+    LOCK_FILE="$SCRIPT_DIR/var/run/video_processor.lock"
+    SEGMENTER="$SCRIPT_DIR/usr/local/bin/video_segmenter"
+fi
 
 # Paramètres de segmentation
 SEGMENT_DURATION=10
 MAX_SEGMENTS=0
 EXTENSION=".ts"
-
-# Chemin vers le binaire
-SEGMENTER="./usr/local/bin/video_segmenter"
-#SEGMENTER="$HOME/Works/video_orchestrator/src/main/resources/usr/local/bin/video_segmenter"
-
-#############################################
-# Fonctions utilitaires
-#############################################
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
