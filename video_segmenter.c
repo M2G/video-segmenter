@@ -218,8 +218,7 @@ int max_list_length) {
             av_packet_unref(pkt);
             continue;
         }
-        // @TODO define 0.25
-        // if (is_keyframe && (pkt_time - segment_start) >= segment_length - 0.25)  { avio_flush(...) avio_closep(...) }
+
         if (is_keyframe && (pkt_time - segment_start) >= (segment_length - 0.25)) {
             avio_flush(output_ctx->pb);
             avio_closep(&output_ctx->pb);
@@ -342,8 +341,6 @@ int main (int argc, char *argv[]) {
     printf("=== Segmentation vidéo ===\n");
     printf("Entrée : %s\n", input_file);
     printf("Sortie : %s/%s-*%s\n", output_dir, base_name, ext);
-    // add log + init segment_video
-    // return result;
     SegResult result = segment_video(
         input_file,
         output_dir,
@@ -352,20 +349,6 @@ int main (int argc, char *argv[]) {
         ext,
         segment_duration,
         max_segments);
-
-    /*
-
-    const char *input_file,
-const char *base_dirpath,
-const char *output_idx_file,
-const char *base_file_name,
-const char *base_file_ext,
-int segment_length,
-int max_list_length
-
-
-
-     */
 
 
     printf("\n%s\n", result == SEG_OK ? "OK" : "FAIL");
