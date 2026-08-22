@@ -107,11 +107,18 @@ release_lock() {
     rm -f "$LOCK_FILE"
 }
 
-# Traite une vidéo
 process_video() {
     local input_file="$1"
     local filename=$(basename "$input_file")
-    local name_without_ext="${filename%.mp4}"
+    # Retire l'extension .mp4/.MP4/.Mp4... quelle que soit la casse
+    local name_without_ext
+    shopt -s nocasematch
+    if [[ "$filename" =~ ^(.+)\.mp4$ ]]; then
+        name_without_ext="${BASH_REMATCH[1]}"
+    else
+        name_without_ext="$filename"
+    fi
+    shopt -u nocasematch
 
     log "========================================="
     log "Traitement: $filename"
