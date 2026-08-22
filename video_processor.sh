@@ -53,17 +53,17 @@ init_directories() {
     touch "$LOG_FILE"
 }
 
-# Vérifie si un fichier est en cours d'écriture (compatible Linux et macOS)
+# Vérif. si un fichier est en cours d'écriture (compatible Linux et macOS)
 is_file_stable() {
     local file="$1"
 
-    # Vérifie que le fichier existe
+    # Vérif. que le fichier existe
     if [ ! -f "$file" ]; then
         log "Fichier introuvable: $file"
         return 1
     fi
 
-    # Détection du système d'exploitation
+    # Détection du syst. d'exploitation
     local size1 size2
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
@@ -86,7 +86,7 @@ is_file_stable() {
     fi
 }
 
-# Vérifie le lock pour éviter plusieurs instances
+# Vérif. le lock pour éviter plusieurs instances
 acquire_lock() {
     if [ -f "$LOCK_FILE" ]; then
         local pid=$(cat "$LOCK_FILE")
