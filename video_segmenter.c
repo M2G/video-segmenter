@@ -56,7 +56,7 @@ static AVStream *add_out_stream(AVFormatContext *output_ctx, AVStream *in_stream
     return out_stream;
 }
 
-static SegResult write_idx_file(
+static SegResult write_index_file(
     const char        *index,
     const char        *tmp_index,
     unsigned int       num_segments,
@@ -250,8 +250,8 @@ int max_list_length) {
                         if (durations[i] > max_duration) max_duration = durations[i];
                 }
             }
-            // write_idx_file
-            write_idx_file(output_idx_file, tmp_idx_file, num_segments, durations, list_offset, base_file_name, base_file_ext, max_duration, 0);
+            // write_index_file
+            write_index_file(output_idx_file, tmp_idx_file, num_segments, durations, list_offset, base_file_name, base_file_ext, max_duration, 0);
 
             // error fatal, stop -> set ret 'SEG_ERR' and goto
             if (num_segments >= MAX_SEGMENTS) {
@@ -303,7 +303,7 @@ int max_list_length) {
             if (last_dur > max_duration) max_duration = last_dur;
             num_segments++;
 
-            write_idx_file(output_idx_file, tmp_idx_file, num_segments, durations,
+            write_index_file(output_idx_file, tmp_idx_file, num_segments, durations,
                  list_offset, base_file_name, base_file_ext, max_duration, 1);
         }
     }
