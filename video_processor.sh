@@ -5,37 +5,22 @@
 # Traite automatiquement les MP4 d'un dossier
 #############################################
 
-# Répertoire du script : ancre les chemins relatifs, indépendamment du cwd d'appel
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Contexte d'exécution : "dev" (chemins relatifs au script) ou "prod" (chemins absolus)
-# Bascule en une seule ligne : APP_CONTEXT=prod ./video_processor.sh
-APP_CONTEXT="${APP_CONTEXT:-dev}"
-
-if [ "$APP_CONTEXT" = "prod" ]; then
-    WATCH_DIR="$HOME/Works/video_orchestrator/src/main/resources/tmp/videos"
-    OUTPUT_DIR="$HOME/Works/video_orchestrator/src/main/resources/var/www/html/streams"
-    PROCESSING_DIR="$HOME/Works/video_orchestrator/src/main/resources/tmp/videos/processing"
-    DONE_DIR="$HOME/Works/video_orchestrator/src/main/resources/tmp/videos/done"
-    ERROR_DIR="$HOME/Works/video_orchestrator/src/main/resources/tmp/videos/error"
-    LOG_FILE="$HOME/Works/video_orchestrator/src/main/resources/var/log/video_processor.log"
-    LOCK_FILE="$HOME/Works/video_orchestrator/src/main/resources/var/run/video_processor.lock"
-    SEGMENTER="$HOME/Works/video_orchestrator/src/main/resources/usr/local/bin/video_segmenter"
-else
-    WATCH_DIR="$SCRIPT_DIR/tmp/videos"
-    OUTPUT_DIR="$SCRIPT_DIR/var/www/html/streams"
-    PROCESSING_DIR="$SCRIPT_DIR/tmp/videos/processing"
-    DONE_DIR="$SCRIPT_DIR/tmp/videos/done"
-    ERROR_DIR="$SCRIPT_DIR/tmp/videos/error"
-    LOG_FILE="$SCRIPT_DIR/var/log/video_processor.log"
-    LOCK_FILE="$SCRIPT_DIR/var/run/video_processor.lock"
-    SEGMENTER="$SCRIPT_DIR/usr/local/bin/video_segmenter"
-fi
+# Chemins configurables via variables d'environnement, avec fallback dev
+WATCH_DIR="${WATCH_DIR:-$SCRIPT_DIR/tmp/videos}"
+OUTPUT_DIR="${OUTPUT_DIR:-$SCRIPT_DIR/var/www/html/streams}"
+PROCESSING_DIR="${PROCESSING_DIR:-$WATCH_DIR/processing}"
+DONE_DIR="${DONE_DIR:-$WATCH_DIR/done}"
+ERROR_DIR="${ERROR_DIR:-$WATCH_DIR/error}"
+LOG_FILE="${LOG_FILE:-$SCRIPT_DIR/var/log/video_processor.log}"
+LOCK_FILE="${LOCK_FILE:-$SCRIPT_DIR/var/run/video_processor.lock}"
+SEGMENTER="${SEGMENTER:-$SCRIPT_DIR/usr/local/bin/video_segmenter}"
 
 # Paramètres de segmentation
-SEGMENT_DURATION=10
-MAX_SEGMENTS=0
-EXTENSION=".ts"
+SEGMENT_DURATION="${SEGMENT_DURATION:-10}"
+MAX_SEGMENTS="${MAX_SEGMENTS:-0}"
+EXTENSION="${EXTENSION:-.ts}"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
@@ -45,7 +30,6 @@ error() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $1" | tee -a "$LOG_FILE" >&2
 }
 
-# Crée les dossiers nécessaires
 init_directories() {
     mkdir -p "$WATCH_DIR" "$OUTPUT_DIR" "$PROCESSING_DIR" "$DONE_DIR" "$ERROR_DIR"
     mkdir -p "$(dirname "$LOG_FILE")"
@@ -53,25 +37,20 @@ init_directories() {
     touch "$LOG_FILE"
 }
 
-# Vérif. si un fichier est en cours d'écriture (compatible Linux et macOS)
 is_file_stable() {
     local file="$1"
 
-    # Vérif. que le fichier existe
     if [ ! -f "$file" ]; then
         log "Fichier introuvable: $file"
         return 1
     fi
 
-    # Détection du syst. d'exploitation
     local size1 size2
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS
         size1=$(stat -f%z "$file" 2>/dev/null || echo 0)
         sleep 2
         size2=$(stat -f%z "$file" 2>/dev/null || echo 0)
     else
-        # Linux
         size1=$(stat -c%s "$file" 2>/dev/null || echo 0)
         sleep 2
         size2=$(stat -c%s "$file" 2>/dev/null || echo 0)
@@ -80,13 +59,12 @@ is_file_stable() {
     log "Vérification stabilité: taille1=$size1, taille2=$size2"
 
     if [ "$size1" -eq "$size2" ] && [ "$size1" -gt 0 ]; then
-        return 0  # Stable
+        return 0
     else
-        return 1  # En cours d'écriture
+        return 1
     fi
 }
 
-# Vérif. le lock pour éviter plusieurs instances
 acquire_lock() {
     if [ -f "$LOCK_FILE" ]; then
         local pid=$(cat "$LOCK_FILE")
@@ -110,7 +88,6 @@ release_lock() {
 process_video() {
     local input_file="$1"
     local filename=$(basename "$input_file")
-    # Retire l'extension .mp4/.MP4/.Mp4... quelle que soit la casse
     local name_without_ext
     shopt -s nocasematch
     if [[ "$filename" =~ ^(.+)\.mp4$ ]]; then
@@ -124,26 +101,20 @@ process_video() {
     log "Traitement: $filename"
     log "========================================="
 
-    # Déplace vers le dossier de traitement
     local processing_file="$PROCESSING_DIR/$filename"
     if ! mv "$input_file" "$processing_file"; then
         error "Impossible de déplacer le fichier vers processing"
         return 1
     fi
 
-    # Vérif. que le fichier est stable
     log "Vérification de la stabilité du fichier..."
     local attempts=0
-    local max_attempts=5  # Réduit de 10 à 5 pour 10 secondes total
+    local max_attempts=5
 
     while ! is_file_stable "$processing_file"; do
         attempts=$((attempts + 1))
         if [ $attempts -gt $max_attempts ]; then
             error "Timeout: le fichier n'est pas stable après $((max_attempts * 2)) secondes"
-            error "Cela peut arriver si:"
-            error "1. Le fichier est corrompu"
-            error "2. Le fichier est encore en cours de copie"
-            error "3. Le système de fichiers est lent"
             mv "$processing_file" "$ERROR_DIR/"
             return 1
         fi
@@ -152,13 +123,11 @@ process_video() {
 
     log "Fichier stable, début du traitement"
 
-    # Prépare les chemins de sortie
     local output_subdir="$OUTPUT_DIR/$name_without_ext"
     local index_file="$output_subdir/${name_without_ext}.m3u8"
 
     mkdir -p "$output_subdir"
 
-    # Lance la segmentation
     log "Lancement de la segmentation..."
     log "Commande: $SEGMENTER \"$processing_file\" \"$output_subdir\" \"$index_file\" \"segment\" \"$EXTENSION\" \"$SEGMENT_DURATION\" \"$MAX_SEGMENTS\""
 
@@ -193,7 +162,6 @@ process_all_videos() {
 
     shopt -s nocaseglob
     for video in "$WATCH_DIR"/*.mp4; do
-        # Vérif. si le fichier existe (le glob peut ne rien trouver)
         if [ ! -f "$video" ]; then
             continue
         fi
@@ -218,13 +186,12 @@ process_all_videos() {
     fi
 }
 
-# Mode surveillance continue (optionnel)
 watch_mode() {
     log "Mode surveillance activé (Ctrl+C pour arrêter)"
 
     while true; do
         process_all_videos
-        sleep 30  # Vérif. toutes les 30 secondes
+        sleep 30
     done
 }
 
@@ -241,22 +208,17 @@ cleanup_old_files() {
 main() {
     init_directories
 
-    # Vérif. les déps.
     if [ ! -x "$SEGMENTER" ]; then
         error "Le binaire $SEGMENTER n'existe pas ou n'est pas exécutable"
-        error "Lancez d'abord: bash install.sh"
         exit 1
     fi
 
-    # Vérif. le lock
     if ! acquire_lock; then
         exit 1
     fi
 
-    # Trap pour libérer le lock à la sortie
     trap release_lock EXIT INT TERM
 
-    # Parse les args.
     case "${1:-}" in
         watch)
             watch_mode
@@ -270,7 +232,6 @@ main() {
     esac
 }
 
-# Affiche l'aide
 if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     cat <<EOF
 Usage: $0 [OPTIONS]
@@ -281,12 +242,10 @@ OPTIONS:
   cleanup [N]   Nettoie les fichiers de plus de N jours (défaut: 7)
   -h, --help    Affiche cette aide
 
-CONFIGURATION:
-  Éditez les variables en haut du script pour changer:
-  - WATCH_DIR: dossier surveillé
-  - OUTPUT_DIR: dossier de sortie
-  - SEGMENT_DURATION: durée des segments
-  - etc.
+ENVIRONMENT VARIABLES:
+  WATCH_DIR, OUTPUT_DIR, PROCESSING_DIR, DONE_DIR, ERROR_DIR
+  LOG_FILE, LOCK_FILE, SEGMENTER
+  SEGMENT_DURATION, MAX_SEGMENTS, EXTENSION
 
 EXEMPLES:
   $0                    # Traite une fois
@@ -299,5 +258,4 @@ EOF
     exit 0
 fi
 
-# Lance le script
 main "$@"
